@@ -15,12 +15,17 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
-	"log"
 	"os"
+	"time"
 
 	"github.com/muka/arpdns/arp"
+	"github.com/muka/ddns/api"
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
+	"google.golang.org/grpc"
 )
 
 // runCmd represents the run command
@@ -30,6 +35,28 @@ var runCmd = &cobra.Command{
 	Long:  ``,
 	Run: func(cmd *cobra.Command, args []string) {
 
+		fullDomain := viper.GetString("domain")
+
+		if viper.GetString("log_level") != "" {
+			lvl, err := log.ParseLevel(viper.GetString("log_level"))
+			if err != nil {
+				fmt.Printf("Failed to parse log level: %s", err)
+				os.Exit(1)
+			}
+			log.SetLevel(lvl)
+		}
+
+		conn, err := grpc.Dial(viper.GetString("ddns"), grpc.WithInsecure())
+		if err != nil {
+			fmt.Printf("Failed to connect to ddns: %s", err)
+			os.Exit(1)
+		}
+
+		client := api.NewDDNSServiceClient(conn)
+
+		defer conn.Close()
+
+		serviceMapping := viper.GetStringMapStringSlice("addresses")
 		response := make(chan [2]string, 1)
 
 		go func() {
@@ -38,13 +65,42 @@ var runCmd = &cobra.Command{
 				case raw := <-response:
 					ip := raw[0]
 					hwaddr := raw[1]
-					log.Printf("IP %v is at %v", ip, hwaddr)
+
+					log.Debugf("Sync IP %s is at %s", ip, hwaddr)
+
+					ctx1 := context.Background()
+					ctx, cancel := context.WithTimeout(ctx1, time.Millisecond*500)
+
+					defer cancel()
+
+					domains, ok := serviceMapping[hwaddr]
+
+					if !ok {
+						log.Debugf("Skip %s (%s)", ip, hwaddr)
+						continue
+					}
+
+					for _, domain := range domains {
+
+						record := new(api.Record)
+						record.Ip = ip
+						record.PTR = true
+						record.Domain = domain + fullDomain
+						record.TTL = 100
+						record.Type = "A"
+
+						_, err = client.SaveRecord(ctx, record)
+						if err != nil {
+							log.Errorf("Failed to save record: %s", err)
+						}
+					}
+
 					break
 				}
 			}
 		}()
 
-		err := arp.ScanARP(response)
+		err = arp.ScanARP(response)
 		if err != nil {
 			fmt.Printf("ARP failed: %s", err)
 			os.Exit(1)

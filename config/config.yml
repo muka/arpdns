@@ -1,0 +1,11 @@
+
+iface: enp3s0f1
+
+ddns: localhost:50551
+
+domain: .lan
+
+addresses:
+  98:44:64:af:af:00:
+    - test1
+    - foobar

@@ -1,7 +1,28 @@
 
 iface: enp3s0f1
 
+ddns: localhost:50551
+
+domain: .spinretail.labs
+
 addresses:
-  98:44:64:af:af:00:
-    - test1
-    - foobar
+  00:80:e1:24:00:42:
+    - spinretail-cloud2
+    - spinretail1
+  00:01:2e:81:5c:10:
+    - spinretail-zotac1
+    - zotac1
+  84:39:be:66:6c:ec:
+    - spinretail-edge1
+    - edge1
+  84:39:be:6a:95:c0:
+    - spinretail-edge2
+    - edge2
+  7c:8b:ca:11:ef:3a:
+    - strix
+  50:3e:aa:08:93:6a:
+    - pve
+  b8:27:eb:f7:8b:23:
+    - owncloud
+  f4:b7:e2:75:05:eb:
+    - gw
