@@ -82,6 +82,8 @@ var runCmd = &cobra.Command{
 
 					for _, domain := range domains {
 
+						nameOnly := viper.GetBool("name_only")
+
 						record := new(api.Record)
 						record.Ip = ip
 						record.PTR = true
@@ -91,8 +93,17 @@ var runCmd = &cobra.Command{
 
 						_, err = client.SaveRecord(ctx, record)
 						if err != nil {
-							log.Errorf("Failed to save record: %s", err)
+							log.Errorf("Failed to save record %s: %s", record.Domain, err)
 						}
+
+						if nameOnly {
+							record.Domain = domain
+							_, err = client.SaveRecord(ctx, record)
+							if err != nil {
+								log.Errorf("Failed to save record %s: %s", record.Domain, err)
+							}
+						}
+
 					}
 
 					break

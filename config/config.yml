@@ -3,9 +3,13 @@ iface: enp3s0f1
 
 ddns: localhost:50551
 
+# expose as fqdn eg. pc1.lan
 domain: .lan
 
+# expose also only the name eg. pc1
+name_only: true
+
 addresses:
-  98:44:64:af:af:00:
-    - test1
+  98:28:a6:05:e3:af:
+    - pc1
     - foobar
